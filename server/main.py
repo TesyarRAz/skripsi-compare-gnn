@@ -3,6 +3,7 @@ import torch
 from typing import Union
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 import model
 import usecase
@@ -24,6 +25,14 @@ for filepath, model_class in model_filepaths:
 print(f"Models loaded: {list(models.keys())}")
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.post("/predict/coord")
 def predict_with_coord(tour: model.PredictCoordTour):

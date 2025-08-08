@@ -1,7 +1,7 @@
 import type { LeafletEventHandlerFnMap, Marker as LeafletMarker } from "leaflet";
 import { BiText } from "react-icons/bi";
 import { MdClose, MdPanTool } from "react-icons/md";
-import { Marker, Popup } from "react-leaflet";
+import { Marker, Popup, Tooltip } from "react-leaflet";
 import type { TSPNode } from "../models/tspnode";
 import { useCallback, useMemo, useRef, useState, type FormEvent } from "react";
 
@@ -49,7 +49,7 @@ const TSPNodeMarker = ({
             eventHandlers={eventHandlers}
             ref={ref}
         >
-            <span></span>
+            
             <Popup
                 autoClose={false}
                 closeOnClick={false}
@@ -99,6 +99,14 @@ const TSPNodeMarker = ({
                     </div>
                 </div>
             </Popup>
+            <Tooltip
+                direction="bottom"
+                offset={[-10, 20]}
+                opacity={1}
+                permanent
+            >
+                <span className="text-xs">{node.name}</span>
+            </Tooltip>
         </Marker>
     );
 };
