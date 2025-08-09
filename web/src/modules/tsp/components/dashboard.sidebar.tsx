@@ -7,6 +7,7 @@ import { ListSubheader, MenuItem, Select } from '@mui/material';
 import { predictTSP } from '../services/api/tsp.service';
 import useAxios from '../../../hooks/use-axios';
 import type { LatLngTuple } from 'leaflet';
+import useSettings from '../hooks/use-settings';
 
 const DashboardSidebar = ({
     center,
@@ -32,6 +33,17 @@ const DashboardSidebar = ({
     ]));
 
     const axios = useAxios();
+    const [
+        showLabel,
+        showMarker,
+        setShowLabel,
+        setShowMarker,
+    ] = useSettings(useShallow(state => [
+        state.showLabel,
+        state.showMarker,
+        state.setShowLabel,
+        state.setShowMarker
+    ]));
     const [model, setModel] = useState<string>("gat/10_50");
 
     const cost = useMemo(() => {
@@ -77,6 +89,20 @@ const DashboardSidebar = ({
         <div className="hidden lg:flex flex-col h-full w-1/2 bg-gray-100 p-4 rounded-md">
             <h2 className="text-xl font-semibold">Dashboard Sidebar</h2>
             <span>Total Cost: {cost.toFixed(2)}</span>
+            <div className="flex items-center gap-2">
+                <input
+                    type="checkbox"
+                    checked={showMarker}
+                    onChange={(e) => setShowMarker(e.target.checked)}
+                />
+                <label>Show Marker</label>
+                <input
+                    type="checkbox"
+                    checked={showLabel}
+                    onChange={(e) => setShowLabel(e.target.checked)}
+                />
+                <label>Show Label</label>
+            </div>
             <div className="flex-1 flex flex-col gap-5 py-10">
                 <div className="overflow-y-scroll flex-1 px-2">
                     <div className="flex flex-col gap-1 flex-1/2 max-h-80">

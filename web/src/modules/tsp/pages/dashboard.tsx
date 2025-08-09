@@ -12,6 +12,7 @@ import { getGeographicMidpoint, haversine } from "../../../utils";
 import DashboardSidebar from "../components/dashboard.sidebar";
 import BenchmarkSidebar from "../components/benchmark.sidebar";
 import type { Benchmark } from "../models/tspnode";
+import useSettings from "../hooks/use-settings";
 
 const algorithms = [
   "gcn/10_30",
@@ -41,6 +42,10 @@ const Dashboard = () => {
     state.update,
   ]));
   const axios = useAxios();
+  const [showLabel, showMarker] = useSettings(useShallow(state => [
+    state.showLabel, 
+    state.showMarker,
+  ]));
 
   const [benchmarks, setBenchmarks] = useState<Benchmark[]>([])
 
@@ -80,7 +85,7 @@ const Dashboard = () => {
             // attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          {nodes.map((node, index) => (
+          {showMarker && nodes.map((node, index) => (
             <TSPNodeMarker
               key={index}
               node={node}
@@ -105,7 +110,7 @@ const Dashboard = () => {
             );
           })}
 
-          {routes.map((route, index) => {
+          {showLabel && routes.map((route, index) => {
             const nextRoute = routes[(index + 1) % routes.length];
             const centerPosition = getGeographicMidpoint(route, nextRoute);
 
