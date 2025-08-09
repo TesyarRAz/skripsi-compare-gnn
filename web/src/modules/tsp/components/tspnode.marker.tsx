@@ -4,6 +4,8 @@ import { MdClose, MdPanTool } from "react-icons/md";
 import { Marker, Popup, Tooltip } from "react-leaflet";
 import type { TSPNode } from "../models/tspnode";
 import { useCallback, useMemo, useRef, useState, type FormEvent } from "react";
+import useSettings from "../hooks/use-settings";
+import { useShallow } from "zustand/shallow";
 
 const TSPNodeMarker = ({
     node,
@@ -12,9 +14,10 @@ const TSPNodeMarker = ({
     node: TSPNode
     onNodeUpdate?: (node: TSPNode) => void;
 }) => {
-    const [draggable, setDraggable] = useState(false);
+    const [draggable, setDraggable] = useState(true);
     const [editable, setEditable] = useState(false);
     const ref = useRef<LeafletMarker<unknown>>(null)
+    const [showLabel] = useSettings(useShallow(state => [state.showLabel]));
 
     const eventHandlers: LeafletEventHandlerFnMap = useMemo(() => ({
         dblclick: () => {
@@ -49,7 +52,7 @@ const TSPNodeMarker = ({
             eventHandlers={eventHandlers}
             ref={ref}
         >
-            
+
             <Popup
                 autoClose={false}
                 closeOnClick={false}
@@ -68,7 +71,7 @@ const TSPNodeMarker = ({
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             e.preventDefault();
-        
+
                                             setEditable(false)
                                         }
 
@@ -99,14 +102,16 @@ const TSPNodeMarker = ({
                     </div>
                 </div>
             </Popup>
-            <Tooltip
-                direction="bottom"
-                offset={[-10, 20]}
-                opacity={1}
-                permanent
-            >
-                <span className="text-xs">{node.name}</span>
-            </Tooltip>
+            {showLabel && (
+                <Tooltip
+                    direction="bottom"
+                    offset={[-10, 20]}
+                    opacity={1}
+                    permanent
+                >
+                    <span className="text-xs">{node.name}</span>
+                </Tooltip>
+            )}
         </Marker>
     );
 };

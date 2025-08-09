@@ -8,6 +8,7 @@ import { predictTSP } from '../services/api/tsp.service';
 import useAxios from '../../../hooks/use-axios';
 import type { LatLngTuple } from 'leaflet';
 import useSettings from '../hooks/use-settings';
+import { AxiosError } from 'axios';
 
 const DashboardSidebar = ({
     center,
@@ -23,6 +24,7 @@ const DashboardSidebar = ({
         addNode,
         removeNode,
         setRoutes,
+        clearNodes
     ] = useNodes(useShallow(state => [
         state.nodes,
         state.routes,
@@ -30,6 +32,7 @@ const DashboardSidebar = ({
         state.add,
         state.remove,
         state.setRoutes,
+        state.clearNodes
     ]));
 
     const axios = useAxios();
@@ -71,18 +74,26 @@ const DashboardSidebar = ({
             lon: node.lng
         }));
 
-        const data = await predictTSP(axios, {
-            model,
-            coords
-        })
+        try {
+            const data = await predictTSP(axios, {
+                model,
+                coords
+            })
 
-        if (data.tour_mask.length === 0) {
-            alert("No route found. Please check your nodes and model selection.");
-            return;
+            if (data.tour_mask.length === 0) {
+                alert("No route found. Please check your nodes and model selection.");
+                return;
+            }
+
+            const routes = data.tour_mask.map(index => nodes[index]);
+            setRoutes(routes.map(node => [node.lat, node.lng]));
+        } catch (error: AxiosError | unknown) {
+            if (error instanceof AxiosError) {
+                alert(`Error: ${error.response?.data?.detail || error.message}`);
+            } else {
+                alert("An unexpected error occurred while predicting the TSP route.");
+            }
         }
-
-        const routes = data.tour_mask.map(index => nodes[index]);
-        setRoutes(routes.map(node => [node.lat, node.lng]));
     }
 
     return (
@@ -128,6 +139,12 @@ const DashboardSidebar = ({
                 >
                     Add Node
                 </button>
+                <button
+                    onClick={() => clearNodes()}
+                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 cursor-pointer"
+                >
+                    Clear Nodes
+                </button>
 
                 <div className="flex flex-col gap-2">
                     <Select
@@ -155,6 +172,9 @@ const DashboardSidebar = ({
                         <MenuItem value="gat_v2/10_50">GAT V2 10-50</MenuItem>
                         <MenuItem value="gat_v2/20_30">GAT V2 20-30</MenuItem>
                         <MenuItem value="gat_v2/20_50">GAT V2 20-50</MenuItem>
+                        <ListSubheader>Other Algorithms</ListSubheader>
+                        <MenuItem value="ant_colony">Ant Colony</MenuItem>
+                        <MenuItem value="held_karp">Held-Karp</MenuItem>
                     </Select>
                     <button
                         type="button"

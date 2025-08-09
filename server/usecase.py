@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from fastapi import HTTPException
 import utils
 import model
+import algorithm
 
 def predict_only(net, sample, device):
     # Set evaluation mode
@@ -38,21 +39,31 @@ def predict_only(net, sample, device):
 
 def predict_with_coords(models, device, tour: model.PredictCoordTour):
     model_name = tour.model
-    if model_name not in models:
-        raise HTTPException(status_code=400, detail=f"Model '{model_name}' not found.")
-    
-    model_instance = models[model_name]
-
     sample = utils.generate_sample_from_coords(
         coords=[(coord.lat, coord.lon) for coord in tour.coords],
     )
 
-    tour_mask, _ = predict_only(model_instance, sample, device)
+    if model_name not in models:
+        if model_name == 'ant_colony':
+            coords = [(coord.lat, coord.lon) for coord in tour.coords]
+            tour_mask, cost = algorithm.ant_colony(coords)
+        elif model_name == 'held_karp':
+            if len(tour.coords) > 20:
+                raise HTTPException(status_code=400, detail="Held-Karp algorithm is not suitable for more than 20 nodes.")
+            coords = [(coord.lat, coord.lon) for coord in tour.coords]
+            tour_mask, cost = algorithm.held_karp(coords)
+        else:
+            raise HTTPException(status_code=400, detail=f"Model '{model_name}' not found.")
+    
+    else:
+        model_instance = models[model_name]
+
+        tour_mask, _ = predict_only(model_instance, sample, device)
+
+        cost = utils.path_cost(tour_mask, sample.edges_values[0])
 
     return {
         "tour_mask": tour_mask,
         # "edge_values": sample.edges_values,
-        "cost": utils.path_cost(tour_mask, sample.edges_values[0]),
+        "cost": cost,
     }
-
-

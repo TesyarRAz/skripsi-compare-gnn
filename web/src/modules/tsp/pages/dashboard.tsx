@@ -5,7 +5,7 @@ import { type LatLngTuple, type Map } from "leaflet";
 import useNodes from "../hooks/use-nodes";
 import { useShallow } from "zustand/shallow"
 import TSPNodeMarker from "../components/tspnode.marker";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { predictTSP } from "../services/api/tsp.service";
 import useAxios from "../../../hooks/use-axios";
 import { getGeographicMidpoint, haversine } from "../../../utils";
@@ -26,7 +26,9 @@ const algorithms = [
   "gat_v2/10_30",
   "gat_v2/10_50",
   "gat_v2/20_30",
-  "gat_v2/20_50"
+  "gat_v2/20_50",
+  "ant_colony",
+  "held_karp",
 ]
 
 const center: LatLngTuple = [-6.923700, 106.928726]
@@ -51,26 +53,30 @@ const Dashboard = () => {
 
   const mapRef = useRef<Map>(null);
 
+  const benchmarkAlgorithm = useCallback(async (algorithm: string) => {
+    const coords = nodes.map(node => ({
+      lat: node.lat,
+      lon: node.lng
+    }));
+
+    const data = await predictTSP(axios, {
+      model: algorithm,
+      coords
+    });
+
+    const cost = data.cost;
+
+    setBenchmarks(prev => [...prev, {
+      model: algorithm,
+      cost: cost
+    }]);
+  }, [axios, nodes])
+
   const handleBenchmark = async () => {
     setBenchmarks([]); // Reset benchmarks
-    for (const algorithm of algorithms) {
-      const coords = nodes.map(node => ({
-        lat: node.lat,
-        lon: node.lng
-      }));
-
-      const data = await predictTSP(axios, {
-        model: algorithm,
-        coords
-      });
-
-      const cost = data.cost;
-
-      setBenchmarks(prev => [...prev, {
-        model: algorithm,
-        cost: cost
-      }]);
-    }
+    await Promise.allSettled(
+      algorithms.map(algorithm => benchmarkAlgorithm(algorithm))
+    );
   }
 
   return (
