@@ -48,7 +48,7 @@ def predict_with_coords(models, device, tour: model.PredictCoordTour):
             coords = [(coord.lat, coord.lon) for coord in tour.coords]
             tour_mask, cost = algorithm.ant_colony(coords)
         elif model_name == 'held_karp':
-            if len(tour.coords) > 20:
+            if len(tour.coords) > 15:
                 raise HTTPException(status_code=400, detail="Held-Karp algorithm is not suitable for more than 20 nodes.")
             coords = [(coord.lat, coord.lon) for coord in tour.coords]
             tour_mask, cost = algorithm.held_karp(coords)
