@@ -1,19 +1,23 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import useNodes from '../hooks/use-nodes';
 import { useShallow } from 'zustand/shallow';
 import { haversine } from '../../../utils';
 import NodeForm from './node.form';
-import { ListSubheader, MenuItem, Select } from '@mui/material';
+import { FormControl, InputLabel, ListSubheader, MenuItem, Select } from '@mui/material';
 import { predictTSP } from '../services/api/tsp.service';
 import useAxios from '../../../hooks/use-axios';
 import type { LatLngTuple } from 'leaflet';
 import useSettings from '../hooks/use-settings';
 import { AxiosError } from 'axios';
+import type { Algorithm } from '../models/algorithm';
+import { schenarios } from '../models/tspnode';
 
 const DashboardSidebar = ({
+    algorithms,
     center,
     onBenchmark
 }: {
+    algorithms: Record<string, Algorithm[]>;
     center: LatLngTuple;
     onBenchmark: () => void;
 }) => {
@@ -24,7 +28,9 @@ const DashboardSidebar = ({
         addNode,
         removeNode,
         setRoutes,
-        clearNodes
+        clearNodes,
+        setNodes,
+        noiseNodes,
     ] = useNodes(useShallow(state => [
         state.nodes,
         state.routes,
@@ -32,7 +38,9 @@ const DashboardSidebar = ({
         state.add,
         state.remove,
         state.setRoutes,
-        state.clearNodes
+        state.clearNodes,
+        state.setNodes,
+        state.noiseNodes
     ]));
 
     const axios = useAxios();
@@ -47,7 +55,14 @@ const DashboardSidebar = ({
         state.setShowLabel,
         state.setShowMarker
     ]));
-    const [model, setModel] = useState<string>("gat/10_50");
+    const [model, setModel] = useState<string>(Object.entries(algorithms)[0]?.[1][0]?.key || "");
+    const [schenarioIndex, setSchenarioIndex] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (schenarioIndex !== null && schenarios[schenarioIndex]) {
+            setNodes(schenarios[schenarioIndex])
+        }
+    }, [schenarioIndex, setNodes]);
 
     const cost = useMemo(() => {
         if (routes.length === 0) return 0;
@@ -56,7 +71,6 @@ const DashboardSidebar = ({
             return total + haversine(route, nextRoute);
         }, 0);
     }, [routes])
-
 
     const handlePredict = async () => {
         if (!model) {
@@ -96,6 +110,16 @@ const DashboardSidebar = ({
         }
     }
 
+    const handleClearNode = () => {
+        clearNodes();
+        setSchenarioIndex(null);
+    }
+
+    const handleAddNode = () => {
+        addNode(center);
+        setSchenarioIndex(null);
+    }
+
     return (
         <div className="hidden lg:flex flex-col h-full w-1/2 bg-gray-100 p-4 rounded-md">
             <h2 className="text-xl font-semibold">Dashboard Sidebar</h2>
@@ -133,49 +157,67 @@ const DashboardSidebar = ({
                         }
                     </div>
                 </div>
+
+                <div className="flex flex-col gap-2">
+                    <Select
+                        label="Select Schenario"
+                        value={schenarioIndex ?? ""}
+                        onChange={(e) => setSchenarioIndex(e.target.value)}
+                        className='w-full'
+                    >
+                        <MenuItem value="" disabled>Select Schenario</MenuItem>
+                        {schenarios.map((_, index) => (
+                            <MenuItem
+                                key={index}
+                                value={index}
+                            >
+                                Schenario {index + 1}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </div>
+
                 <button
-                    onClick={() => addNode(center)}
+                    onClick={() => handleAddNode()}
                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer"
                 >
                     Add Node
                 </button>
                 <button
-                    onClick={() => clearNodes()}
+                    onClick={() => noiseNodes()}
+                    className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 cursor-pointer"
+                >
+                    Add Noise to Nodes
+                </button>
+                <button
+                    onClick={() => handleClearNode()}
                     className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 cursor-pointer"
                 >
                     Clear Nodes
                 </button>
 
+
                 <div className="flex flex-col gap-2">
-                    <Select
-                        value={model}
-                        onChange={(e) => setModel(e.target.value)}
-                        className="w-full"
-                        inputProps={{
-                            name: 'model',
-                            id: 'tsp-model-select',
-                        }}
+                    <FormControl
                     >
-                        <MenuItem value="" disabled>Select Model</MenuItem>
-                        <ListSubheader>GCN</ListSubheader>
-                        <MenuItem value="gcn/10_30">GCN 10-30</MenuItem>
-                        <MenuItem value="gcn/10_50">GCN 10-50</MenuItem>
-                        <MenuItem value="gcn/20_30">GCN 20-30</MenuItem>
-                        <MenuItem value="gcn/20_50">GCN 20-50</MenuItem>
-                        <ListSubheader>GAT</ListSubheader>
-                        <MenuItem value="gat/10_30">GAT 10-30</MenuItem>
-                        <MenuItem value="gat/10_50">GAT 10-50</MenuItem>
-                        <MenuItem value="gat/20_30">GAT 20-30</MenuItem>
-                        <MenuItem value="gat/20_50">GAT 20-50</MenuItem>
-                        <ListSubheader>GAT V2</ListSubheader>
-                        <MenuItem value="gat_v2/10_30">GAT V2 10-30</MenuItem>
-                        <MenuItem value="gat_v2/10_50">GAT V2 10-50</MenuItem>
-                        <MenuItem value="gat_v2/20_30">GAT V2 20-30</MenuItem>
-                        <MenuItem value="gat_v2/20_50">GAT V2 20-50</MenuItem>
-                        <ListSubheader>Other Algorithms</ListSubheader>
-                        <MenuItem value="ant_colony">Ant Colony</MenuItem>
-                        <MenuItem value="held_karp">Held-Karp</MenuItem>
-                    </Select>
+                        <InputLabel id="select-model-label">Select Model</InputLabel>
+                        <Select
+                            labelId='select-model-label'
+                            id="select-model"
+                            value={model}
+                            onChange={(e) => setModel(e.target.value)}
+                        >
+                            <MenuItem value="" disabled>Select Model</MenuItem>
+                            {Object.entries(algorithms).map(([group, algos]) => [
+                                <ListSubheader>{group}</ListSubheader>,
+                                algos.map((algo) => (
+                                    <MenuItem key={algo.key} value={algo.key}>
+                                        {algo.name}
+                                    </MenuItem>
+                                ))
+                            ])}
+                        </Select>
+                    </FormControl>
                     <button
                         type="button"
                         onClick={handlePredict}
