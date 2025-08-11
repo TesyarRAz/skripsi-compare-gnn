@@ -11,25 +11,10 @@ import useAxios from "../../../hooks/use-axios";
 import { getGeographicMidpoint, haversine } from "../../../utils";
 import DashboardSidebar from "../components/dashboard.sidebar";
 import BenchmarkSidebar from "../components/benchmark.sidebar";
-import type { Benchmark } from "../models/tspnode";
+import type { Benchmark } from "../models/benchmark";
 import useSettings from "../hooks/use-settings";
+import { algorithms, groupedAlgorithms } from "../models/algorithm";
 
-const algorithms = [
-  "gcn/10_30",
-  "gcn/10_50",
-  "gcn/20_30",
-  "gcn/20_50",
-  "gat/10_30",
-  "gat/10_50",
-  "gat/20_30",
-  "gat/20_50",
-  "gat_v2/10_30",
-  "gat_v2/10_50",
-  "gat_v2/20_30",
-  "gat_v2/20_50",
-  "ant_colony",
-  "held_karp",
-]
 
 const center: LatLngTuple = [-6.923700, 106.928726]
 
@@ -75,7 +60,7 @@ const Dashboard = () => {
   const handleBenchmark = async () => {
     setBenchmarks([]); // Reset benchmarks
     await Promise.allSettled(
-      algorithms.map(algorithm => benchmarkAlgorithm(algorithm))
+      algorithms.map(algorithm => benchmarkAlgorithm(algorithm.key))
     );
   }
 
@@ -154,6 +139,7 @@ const Dashboard = () => {
       </div>
       <DashboardSidebar
         center={center}
+        algorithms={groupedAlgorithms}
         onBenchmark={handleBenchmark}
       />
       <BenchmarkSidebar

@@ -11,6 +11,8 @@ export interface NodesState {
     remove: (id: string) => void;
     setRoutes: (routes: LatLngTuple[]) => void;
     clearNodes: () => void; // Optional method to clear nodes
+    setNodes: (nodes: TSPNode[]) => void; // Method to set nodes directly
+    noiseNodes: () => void; // Method to add noise to nodes
 }
 
 const useNodes = create<NodesState>()(
@@ -49,6 +51,22 @@ const useNodes = create<NodesState>()(
             clearNodes() {
                 set(() => ({
                     nodes: [],
+                    routes: [],
+                }));
+            },
+            setNodes(nodes: TSPNode[]) {
+                set(() => ({
+                    nodes: nodes,
+                    routes: [],
+                }));
+            },
+            noiseNodes() {
+                set((state) => ({
+                    nodes: state.nodes.map((node) => ({
+                        ...node,
+                        lat: node.lat + (Math.random() - 0.5) * 0.01,
+                        lng: node.lng + (Math.random() - 0.5) * 0.01,
+                    })),
                     routes: [],
                 }));
             },
